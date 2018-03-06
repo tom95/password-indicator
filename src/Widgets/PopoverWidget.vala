@@ -25,6 +25,8 @@ public class Password.Widgets.PopoverWidget : Gtk.Stack {
 
     const uint CLIPBOARD_EXPIRY_MS = 1000 * 5;
 
+    public signal void request_close ();
+
     string? current_clipboard_val = null;
     uint clipboard_expiry_timeout;
 
@@ -134,8 +136,11 @@ public class Password.Widgets.PopoverWidget : Gtk.Stack {
 
         values_list = new Gtk.Grid ();
         values_list.row_spacing = 2;
-        values_list.column_spacing = 12;
+        values_list.column_spacing = 24;
         values_list.hexpand = true;
+        values_list.margin_top = values_list.margin_bottom = 12;
+        values_list.margin_left = 24;
+        values_list.margin_right = 6;
 
         var scroll = new Wingpanel.Widgets.AutomaticScrollBox (null, null);
         scroll.hexpand = true;
@@ -150,9 +155,19 @@ public class Password.Widgets.PopoverWidget : Gtk.Stack {
             visible_child_name = SEARCH_VIEW;
         });
 
+        var edit_button = new Gtk.Button.from_icon_name ("edit-symbolic", Gtk.IconSize.MENU);
+        edit_button.margin = 12;
+        edit_button.clicked.connect (() => {
+            var w = new AddWindow ();
+            w.show_all ();
+            request_close ();
+        });
+
         grid.attach (back_button, 0, 0, 1, 1);
         grid.attach (title_label, 1, 0, 1, 1);
-        grid.attach (scroll, 0, 1, 2, 1);
+        grid.attach (edit_button, 2, 0, 1, 1);
+        grid.attach (new Wingpanel.Widgets.Separator (), 0, 1, 3, 1);
+        grid.attach (scroll, 0, 2, 3, 1);
 
         return grid;
     }
@@ -162,19 +177,20 @@ public class Password.Widgets.PopoverWidget : Gtk.Stack {
 
         title_label.label = path;
 
-        var button_padding = Gtk.Border ();
-
         var i = 0;
         foreach (var row in file_data.split ("\n")) {
-            Gtk.Widget key, val;
+            Gtk.Label key;
+            Gtk.Widget val;
 
             string copy_value;
 
             if (i == 0) {
                 key = new Gtk.Label ("Password:");
                 val = new InitiallyHiddenLabel (row);
+                val.get_style_context ().add_provider (css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+                val.get_style_context ().add_class ("padding-less-button");
+                val.hexpand = true;
                 copy_value = row;
-                button_padding = ((Gtk.Button) val).get_child ().get_style_context ().get_padding (Gtk.StateFlags.NORMAL);
             } else {
                 var parts = row.split(":", 2);
                 if (parts.length < 2) {
@@ -184,16 +200,11 @@ public class Password.Widgets.PopoverWidget : Gtk.Stack {
                 copy_value = parts[1].strip ();
                 key = new Gtk.Label (parts[0].strip () + ":");
                 val = new Gtk.Label (copy_value);
-                print("%i %i %i %i\n", button_padding.top, button_padding.left, button_padding.right, button_padding.bottom);
-                ((Gtk.Label) val).xalign = button_padding.left;
-                val.margin_top = button_padding.top;
-                val.margin_left = button_padding.left;
-                val.margin_right = button_padding.right;
-                val.margin_bottom = button_padding.bottom;
             }
 
             key.margin_left = 12;
-            key.halign = Gtk.Align.START;
+            key.halign = Gtk.Align.END;
+            key.xalign = 1;
 
             var style_context = key.get_style_context ();
             style_context.add_class ("password-view-key-label");
@@ -249,6 +260,8 @@ public class Password.Widgets.PopoverWidget : Gtk.Stack {
 
     Gtk.Widget build_unlock_grid () {
         var grid = build_grid ();
+        grid.margin = 24;
+        grid.row_spacing = 12;
 
         var locked_icon = new Gtk.Image.from_icon_name ("dialog-password", Gtk.IconSize.DIALOG);
         locked_icon.halign = Gtk.Align.CENTER;
@@ -294,7 +307,7 @@ public class Password.Widgets.PopoverWidget : Gtk.Stack {
     }
 
     Wingpanel.Widgets.Button add_button_for_entry (string file) {
-        var b = new Wingpanel.Widgets.Button (file);
+        var b = new Wingpanel.Widgets.Button (file, "dialog-password");
         b.clicked.connect ((button) => {
             selected_path = ((Wingpanel.Widgets.Button) button).get_caption ();
             visible_child_name = UNLOCK_VIEW;
@@ -308,6 +321,13 @@ public class Password.Widgets.PopoverWidget : Gtk.Stack {
 
         search_list = new Gtk.Grid ();
         search_list.orientation = Gtk.Orientation.VERTICAL;
+
+        var add = new Wingpanel.Widgets.Button ("Add New Entry", "list-add");
+        add.clicked.connect (() => {
+            request_close ();
+            new AddWindow ().show_all ();
+        });
+        search_list.add (add);
 
         watcher.fetch_file_list.begin ((obj, res) => {
             foreach (var file in watcher.fetch_file_list.end (res)) {
@@ -338,8 +358,7 @@ public class Password.Widgets.PopoverWidget : Gtk.Stack {
         search_entry.margin = 6;
 
         search_entry.activate.connect (() => {
-            selected_path = get_nth_search_item (int.max (selected_search_result, 0)).get_caption ();
-            visible_child_name = UNLOCK_VIEW;
+            get_nth_search_item (int.max (selected_search_result, 0)).clicked ();
         });
 
         search_entry.key_press_event.connect ((e) => {

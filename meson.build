@@ -20,6 +20,7 @@ add_project_arguments(['--vapidir', join_paths(meson.current_source_dir(), 'vapi
 shared_module(
     meson.project_name(),
     'src/Indicator.vala',
+    'src/Widgets/AddWindow.vala',
     'src/Widgets/PopoverWidget.vala',
     'src/Widgets/InitiallHiddenLabel.vala',
     'src/Services/Watcher.vala',
@@ -33,7 +34,5 @@ shared_module(
         wingpanel_dep
     ],
     install: true,
-    install_dir : wingpanel_dep.get_pkgconfig_variable('indicatorsdir')
+    install_dir : get_option('libdir') + '/wingpanel' #wingpanel_dep.get_pkgconfig_variable('indicatorsdir')
 )
-
-subdir('po')

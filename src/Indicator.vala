@@ -53,6 +53,7 @@ public class Password.Indicator : Wingpanel.Indicator {
     public override Gtk.Widget? get_widget () {
         if (popover_widget == null) {
             popover_widget = new Password.Widgets.PopoverWidget ();
+            popover_widget.request_close.connect (() => close ());
         }
 
         visible = true;

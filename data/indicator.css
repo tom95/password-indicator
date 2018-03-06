@@ -17,10 +17,14 @@
 * Boston, MA 02110-1301 USA.
 */
 
-.password-view {
-    background: #fff;
-}
-
 .password-view-key-label {
     font-weight: bold;
+}
+
+.padding-less-button {
+    padding: 0;
+}
+.padding-less-button > * {
+    padding: 0;
+    margin: 0;
 }
